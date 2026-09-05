@@ -1,0 +1,26 @@
+# Build directories
+target/
+Cargo.lock
+
+# Manual, and the text extracted from it (large, and Icom's to distribute).
+# docs/manuals/README.md says where to download it and how to regenerate
+# the extract.
+docs/manuals/*.pdf
+docs/manuals/ci-v-section.txt
+
+# Planning directories (agent working files)
+planning/
+**/task_plan.md
+**/findings.md
+**/progress.md
+
+# IDE
+.idea/
+node_modules/
+
+# Temporary files
+*.swp
+*.swo
+*~
+.DS_Store
+*.deb

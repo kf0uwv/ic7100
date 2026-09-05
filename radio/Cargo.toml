@@ -1,0 +1,25 @@
+[package]
+name = "radio"
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.75"
+license = "Apache-2.0"
+description = "The Icom IC-7100: its CI-V command table, capabilities and console"
+
+[dependencies]
+# The generic engine, and the CI-V wire format within it.
+cat-framework = { workspace = true }
+# The console arrangement and palette this radio asks for.
+cat-layout = { workspace = true }
+# The signal vocabulary its declaration is written in.
+cat-signal = { workspace = true }
+thiserror = { workspace = true }
+# The generic client mechanics this radio's typed methods sit on.
+cat-client = { workspace = true }
+# The session trait. This crate never names a concrete transport.
+cat-transport-core = { workspace = true }
+async-trait = "0.1.80"
+
+[dev-dependencies]
+# A runtime-agnostic executor, so these tests are not tied to monoio.
+futures = "0.3.30"

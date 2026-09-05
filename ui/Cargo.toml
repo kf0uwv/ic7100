@@ -1,0 +1,17 @@
+[package]
+name = "ui"
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.75"
+license = "Apache-2.0"
+description = "The IC-7100's terminal console, over the console protocol"
+
+[dependencies]
+# The console itself is shared (radio-cat-rs ADR 0011's second amendment).
+# What is here is the loop that feeds it.
+cat-ui = { workspace = true }
+cat-ui-ratatui = { workspace = true }
+cat-native = { workspace = true }
+ratatui = { workspace = true }
+crossterm = { workspace = true }
+thiserror = { workspace = true }

@@ -1,0 +1,62 @@
+[workspace]
+members = ["radio", "emulator", "server", "gui", "ui"]
+resolver = "2"
+
+# The generic CAT engine and everything above it comes from the sibling
+# `radio-cat-rs` checkout. Path dependencies rather than tagged git ones,
+# for the same reason `ft991a` uses them: the CI-V wire format this radio
+# needs (`cat_framework::civ`) is new and not in a release yet.
+#
+# TEMPORARY: revert to tagged git dependencies when radio-cat-rs cuts the
+# release containing `CivFormat`.
+[workspace.dependencies]
+cat-framework = { path = "../radio-cat-rs/cat-framework" }
+cat-client = { path = "../radio-cat-rs/cat-client" }
+cat-layout = { path = "../radio-cat-rs/cat-layout" }
+cat-signal = { path = "../radio-cat-rs/cat-signal" }
+cat-transport-core = { path = "../radio-cat-rs/cat-transport-core" }
+cat-transport-serial = { path = "../radio-cat-rs/cat-transport-serial" }
+cat-native = { path = "../radio-cat-rs/cat-native" }
+cat-rigctl = { path = "../radio-cat-rs/cat-rigctl" }
+cat-ui = { path = "../radio-cat-rs/cat-ui" }
+cat-ui-egui = { path = "../radio-cat-rs/cat-ui-egui" }
+
+eframe = { version = "0.29", default-features = false, features = [
+    "wgpu",
+    "default_fonts",
+    "x11",
+    "wayland",
+] }
+egui = "0.29"
+cat-ui-ratatui = { path = "../radio-cat-rs/cat-ui-ratatui" }
+ratatui = { version = "0.26.3", features = ["crossterm"] }
+crossterm = { version = "0.27.0", features = ["event-stream"] }
+
+thiserror = "1.0.61"
+serialport = "4"
+libc = "0.2"
+
+[package]
+name = "ic7100"
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.75"
+license = "Apache-2.0"
+description = "Control an Icom IC-7100 over CI-V"
+
+[dependencies]
+radio = { path = "radio" }
+server = { path = "server" }
+ui = { path = "ui" }
+cat-framework = { workspace = true }
+cat-transport-core = { workspace = true }
+cat-transport-serial = { workspace = true }
+
+[target.'cfg(target_os = "linux")'.dependencies]
+# io_uring. Linux only, target-gated, and never tokio -- the same rule
+# every other radio in this fleet follows.
+monoio = { version = "0.2", features = ["sync"] }
+
+[[bin]]
+name = "ic7100"
+path = "src/main.rs"

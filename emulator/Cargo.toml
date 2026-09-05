@@ -1,0 +1,22 @@
+[package]
+name = "emulator"
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.75"
+license = "Apache-2.0"
+description = "A virtual IC-7100: CI-V on a pseudo-terminal"
+
+# Linux/Unix only, like the other radios' emulators: it hosts a
+# pseudo-terminal, which has no Windows equivalent.
+
+[dependencies]
+radio = { path = "../radio" }
+cat-framework = { workspace = true }
+cat-signal = { workspace = true }
+thiserror = { workspace = true }
+serialport = { workspace = true }
+libc = { workspace = true }
+
+[[bin]]
+name = "emulator"
+path = "src/main.rs"

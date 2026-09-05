@@ -1,0 +1,18 @@
+[package]
+name = "server"
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.75"
+license = "Apache-2.0"
+description = "Share an IC-7100 over the network: rigctl for WSJT-X, and the console protocol"
+
+[dependencies]
+radio = { path = "../radio" }
+cat-framework = { workspace = true }
+cat-native = { workspace = true }
+cat-rigctl = { workspace = true }
+cat-transport-core = { workspace = true }
+async-trait = "0.1.80"
+
+[target.'cfg(target_os = "linux")'.dependencies]
+monoio = { version = "0.2", features = ["sync"] }
