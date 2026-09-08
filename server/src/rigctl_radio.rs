@@ -46,6 +46,12 @@ where
     type Mode = Mode;
     type Error = RadioError<S::Error>;
 
+    fn unsupported() -> Self::Error {
+        // This radio's CAT set has no such command; the closest honest
+        // thing it can say is that it refused.
+        RadioError::Refused
+    }
+
     async fn get_vfo_a_hz(&mut self) -> Result<u64, Self::Error> {
         self.0.frequency().await
     }
