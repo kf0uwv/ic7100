@@ -103,6 +103,10 @@ where
             // no width to report.
             filter_width_hz: None,
             meters,
+            // This radio's console does not read the occasional-settings
+            // block. `None` says so; a console draws dashes rather than
+            // its own struct defaults.
+            levels: None,
         })
     }
 
