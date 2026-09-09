@@ -179,7 +179,7 @@ pub const IC7100_S_UNITS: SUnitScale = SUnitScale::new([
     // labels at their *nominal* raw values:
     //
     //   S0..S9      0.0  13.3  26.7  40.0  53.3  66.7  80.0  93.3 106.7 120.0
-    //   S9+10/20/30                                      140.2 160.3 180.5
+    //   S9+10..+60                140.2 160.3 180.5 200.7 220.8 241.0
     //
     // These thresholds are the **inclusive top** of each label, so each
     // one is the midpoint between its nominal value and the next. Using
@@ -199,7 +199,18 @@ pub const IC7100_S_UNITS: SUnitScale = SUnitScale::new([
     130,
     150,
     170,
-    // Everything above is +30 dB or better.
+    // The same line continued to the manual's third calibration point.
+    // Nominal S9+40/50/60 are 200.7, 220.8 and 241.0, so these are the
+    // midpoints again -- and the last is `u16::MAX` rather than 241,
+    // because a reading past the top of the meter should peg there
+    // rather than fall through to S0.
+    //
+    // The labels used to stop at S9+30, so everything from raw 171 up --
+    // the top third of this radio's range -- drew as S9+30, up to 30 dB
+    // weaker than the radio was reporting.
+    191,
+    211,
+    231,
     u16::MAX,
 ]);
 
@@ -324,14 +335,15 @@ mod tests {
         assert_eq!(IC7100_S_UNITS.label(140), "S9+10");
         assert_eq!(IC7100_S_UNITS.label(160), "S9+20");
         assert_eq!(IC7100_S_UNITS.label(181), "S9+30");
+        assert_eq!(IC7100_S_UNITS.label(200), "S9+40");
+        assert_eq!(IC7100_S_UNITS.label(220), "S9+50");
 
-        // The manual's third point is raw 241 = S9+**60** dB, and the
-        // shared label set stops at S9+30. So the top label absorbs
-        // everything above it, and a console showing "S9+30" for a signal
-        // 60 dB over is under-reporting by half. Recorded here rather
-        // than silently: closing it means a wider `S_UNIT_LABELS`, which
-        // is every radio's business and not this one's to change.
-        assert_eq!(IC7100_S_UNITS.label(241), "S9+30");
+        // The manual's third point, raw 241 = S9+60 dB. This used to read
+        // S9+30 because the shared label set stopped there and the top
+        // label absorbed everything above it -- a signal 60 dB over S9
+        // was reported as half that. `S_UNIT_LABELS` now runs to S9+60,
+        // so the scale reproduces all three of the manual's points.
+        assert_eq!(IC7100_S_UNITS.label(241), "S9+60");
     }
 
     #[test]
