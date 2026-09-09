@@ -46,6 +46,12 @@ where
     type Mode = Mode;
     type Error = RadioError<S::Error>;
 
+    fn unsupported() -> Self::Error {
+        // This radio's CAT set has no such command; the closest honest
+        // thing it can say is that it refused.
+        RadioError::Refused
+    }
+
     async fn get_vfo_a_hz(&mut self) -> Result<u64, Self::Error> {
         self.0.frequency().await
     }
@@ -118,6 +124,35 @@ where
         (range.min_hz, range.max_hz)
     }
 
+    /// Split, which this radio carries on the same command as duplex.
+    ///
+    /// `RigctlRadio`'s default refuses, and this impl inherited that
+    /// refusal while `Ic7100::split_and_duplex` sat one call away. So
+    /// rigctl's `s` reported "not split" on a radio that was in split, and
+    /// `S 1` refused outright -- a defaulted trait method nobody overrode
+    /// looks exactly like a radio that cannot do the thing.
+    async fn get_split(&mut self) -> Result<bool, Self::Error> {
+        // The duplex half of the answer is dropped: rigctl asks a yes/no
+        // question here, and `Duplex::Plus` is repeater shift, not split.
+        self.0
+            .split_and_duplex()
+            .await
+            .map(|(split, _duplex)| split)
+    }
+
+    async fn set_split(&mut self, on: bool) -> Result<(), Self::Error> {
+        self.0.set_split(on).await
+    }
+
+    /// The `ModeId` -> `Mode` crossing, so a cached poll can answer `m`.
+    ///
+    /// Without it every mode read goes to the wire. Not wrong -- the
+    /// cache falls through rather than guessing -- but it spends the
+    /// shared CI-V link on a question already answered.
+    fn mode_from_id(id: cat_framework::capabilities::ModeId) -> Option<Self::Mode> {
+        Mode::from_shared(id)
+    }
+
     fn hamlib_mode_from_name(name: &str) -> Option<Self::Mode> {
         Some(match name {
             "LSB" => Mode::Lsb,
@@ -160,6 +195,66 @@ mod tests {
     }
 
     type R = Ic7100Rigctl<Nothing>;
+
+    #[test]
+    fn every_mode_this_radio_can_report_crosses_back_from_its_shared_id() {
+        // `mode_from_id` is what lets a cached poll answer `m` without
+        // going to the wire. It was never overridden, so it returned
+        // `None` for everything and every mode read went out over CI-V.
+        for descriptor in radio::capabilities::IC7100.modes.iter() {
+            assert!(
+                R::mode_from_id(descriptor.id).is_some(),
+                "{} is declared but does not cross back from its ModeId",
+                descriptor.label
+            );
+        }
+    }
+
+    /// A session whose other end is this radio's own emulator, so a
+    /// command written comes back read.
+    struct Loopback {
+        radio: cat_framework::CatFramework<radio::Ic7100Radio, cat_framework::civ::CivFormat>,
+    }
+
+    #[async_trait::async_trait(?Send)]
+    impl CatSession for Loopback {
+        type Error = cat_transport_core::TransportError;
+        async fn execute(
+            &mut self,
+            request: &[u8],
+            response: &mut Vec<u8>,
+        ) -> Result<cat_framework::ResponseDisposition, Self::Error> {
+            self.radio
+                .process_frame(request, response)
+                .map(|o| o.response)
+                .map_err(|_| cat_transport_core::TransportError::Other("frame refused".to_string()))
+        }
+    }
+
+    fn emulated() -> Ic7100Rigctl<Loopback> {
+        Ic7100Rigctl::new(radio::Ic7100::new(Loopback {
+            radio: cat_framework::CatFramework::with_format(
+                radio::Ic7100Radio::new(),
+                cat_framework::civ::CivFormat::default(),
+            ),
+        }))
+    }
+
+    #[monoio::test(driver = "legacy")]
+    async fn split_survives_the_round_trip_through_the_bridge() {
+        // `get_split`/`set_split` are defaulted on `RigctlRadio`, and this
+        // impl inherited the default: rigctl's `s` answered "not split" on
+        // a radio that was in split, and `S 1` refused, while command 0F
+        // sat one call away. This asserts the round trip rather than the
+        // methods' presence, so deleting either impl fails the test
+        // instead of quietly compiling.
+        let mut r = emulated();
+        assert!(!r.get_split().await.expect("split is readable"));
+        r.set_split(true).await.expect("split is settable");
+        assert!(r.get_split().await.expect("split is readable"));
+        r.set_split(false).await.expect("split is settable");
+        assert!(!r.get_split().await.expect("split is readable"));
+    }
 
     #[test]
     fn every_mode_this_radio_has_gets_a_hamlib_name() {

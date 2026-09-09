@@ -113,7 +113,6 @@ registry for this; the ratatui console does not yet — see below).
 
 ### Recorded limits (not bugs, but do not "fix" them blindly)
 - `rx_range` over-claims across the 200–400 MHz gap; `covers()` is the truth.
-- S-unit labels stop at S9+30 while the radio reports to S9+60.
 - DV maps to Hamlib `PKTFM` — the closest thing rigctl has.
 
 ## Essential Commands
